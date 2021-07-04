@@ -21,14 +21,11 @@ __author__ = "WitchChicken"
 from pathlib import Path
 import shutil
 
-from tkinter import *
-from tkinter import Tk, Text, Button, Label, BOTH, W, N, E, S, X, SUNKEN
-from tkinter.ttk import Frame, Button, Label, Style
+from tkinter import Tk, Button, Entry, Label, StringVar, Text, E, N, W, S, X
 from tkinter.filedialog import askdirectory
 
 DefaultDIABLO = Path("C:/Program Files (x86)/Diablo III")
 DefaultHOTS = Path("C:/Program Files (x86)/Heroes of the Storm")
-
 
 class SoundFixWindow(Tk):
 
@@ -102,7 +99,7 @@ class SoundFixWindow(Tk):
             shutil.copyfile(src, dst)
             self.statusbar.config(text="success")
         except:
-            pass
+            self.statusbar.config(text="failed")
 
     def searchDIABLO(self):
         game = askdirectory(title="Where is Diablo III installed?")
@@ -122,7 +119,7 @@ class SoundFixWindow(Tk):
         a = Path(self.diabloDLL.get())
         b = Path(self.hotsDLL.get())
 
-        state = "enabled" if a.is_file() and b.is_file() else "disabled"
+        state = "normal" if a.is_file() and b.is_file() else "disabled"
         self.overwriteButton["state"] = state
 
     def validateDIABLO(self, *args):
@@ -151,11 +148,9 @@ class SoundFixWindow(Tk):
         self.hotsDLL.set("HotS fmodex64 not found")
         self.hotsLabel.config(foreground="red")
 
-
 def main():
     win = SoundFixWindow()
     win.mainloop()
 
 if __name__ == "__main__":
     main()
-
