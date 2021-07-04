@@ -1,0 +1,161 @@
+"""
+This isn't any thing special. It's only a simple tool to help overwrite the Diablo III sound file with the Heroes of the Storm sound file.
+
+Explaination:
+    Sometimes Diablo 3 will freeze and lag. Some of these issues are caused by Diablo 3's sound file.
+    Here is a post on the Blizzard forums written by Keyblade explaining the ussual workaround many players already use.
+    https://us.forums.blizzard.com/en/d3/t/main-thread-windows-19041-freezing-for-5-10-seconds/18380/170
+
+    I don't like doing this for two reasons. (1) We are turning off auto update. (2) Players need to type their log-in info every time they launch the game.
+    I made this tool to make copying the sound file a little easier so we can keep useing the Battle.net launcher.
+
+HOW TO USE THIS METHOD.
+    (1) Open the Battle.net launcher.
+    (2) If the launcher wants you to update Diablo 3, do it. It'll only take a second.
+    (3) Execute this script and overwrite the sound file.
+    (4) Play the game.
+"""
+
+__author__ = "WitchChicken"
+
+from pathlib import Path
+import shutil
+
+from tkinter import *
+from tkinter import Tk, Text, Button, Label, BOTH, W, N, E, S, X, SUNKEN
+from tkinter.ttk import Frame, Button, Label, Style
+from tkinter.filedialog import askdirectory
+
+DefaultDIABLO = Path("C:/Program Files (x86)/Diablo III")
+DefaultHOTS = Path("C:/Program Files (x86)/Heroes of the Storm")
+
+
+class SoundFixWindow(Tk):
+
+    def __init__(self):
+        super().__init__()
+        self.title("Diablo III Easy Sound Fix")
+
+        self.diabloDir = StringVar()
+        self.diabloDLL = StringVar()
+        self.hotsDir = StringVar()
+        self.hotsDLL = StringVar()
+
+        self.initUI()
+
+        self.diabloDir.trace('w', self.validateDIABLO)
+        self.diabloDir.set(DefaultDIABLO)
+        self.hotsDir.trace('w', self.validateHOTS)
+        self.hotsDir.set(DefaultHOTS)
+
+        self.diabloDLL.trace('w', self.updateOverwriteState)
+        self.hotsDLL.trace('w', self.updateOverwriteState)
+
+    def initUI(self):
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(5, weight=1)
+
+        ## widgets start here
+        lbl = Label(self, text="Where are these games installed?", font="size, 14")
+        lbl.grid(row=0, column=1, columnspan=3, sticky=W+E+N+S)
+
+        ## Hots
+        hotsLabel = Label(self, text="HotS")
+        hotsLabel.grid(row=1, column=0, sticky=W+N+S)
+
+        self.hotsEntry = Entry(self, textvariable=self.hotsDir, bd=1)
+        self.hotsEntry.grid(row=1, column=1, sticky=W+E+N+S)
+
+        self.hotsWhere = Button(self, text="search", command=self.searchHOTS)
+        self.hotsWhere.grid(row=1, column=3, sticky=E+N+S)
+
+        ## Diablo III
+        diabloLabel = Label(self, text="Diablo III")
+        diabloLabel.grid(row=2, column=0, sticky=W+N+S)
+
+        self.diabloEntry = Entry(self, textvariable=self.diabloDir, bd=1)
+        self.diabloEntry.grid(row=2, column=1, sticky=W+E+N+S)
+
+        self.diabloWhere = Button(self, text="search", command=self.searchDIABLO)
+        self.diabloWhere.grid(row=2, column=3, sticky=E+N+S)
+
+        ## fmodex64 labels
+        self.hotsLabel = Label(self, textvariable=self.hotsDLL)
+        self.hotsLabel.grid(row=3, column=1, columnspan=3, sticky=W+N)
+
+        self.diabloLabel = Label(self, textvariable=self.diabloDLL)
+        self.diabloLabel.grid(row=4, column=1, columnspan=3, sticky=W+N)
+
+        ## Execute
+        self.overwriteButton = Button(self, text="overwrite D3's fmodex64 file", command=self.overwriteFile)
+        self.overwriteButton.grid(row=5, column=0, columnspan=4)
+        self.overwriteButton["state"] = "disabled"
+
+        ## Statusbar
+        self.statusbar = Label(self, text="", anchor=S)
+        self.statusbar.grid(row=6, column=0, columnspan=4)
+
+    def overwriteFile(self):
+        dst = Path(self.diabloDLL.get())
+        src = Path(self.hotsDLL.get())
+        try:
+            shutil.copyfile(src, dst)
+            self.statusbar.config(text="success")
+        except:
+            pass
+
+    def searchDIABLO(self):
+        game = askdirectory(title="Where is Diablo III installed?")
+        if not game:
+            return
+        game = Path(game)
+        self.diabloDir.set(game)
+
+    def searchHOTS(self):
+        game = askdirectory(title="Where is Heroes of the Storm installed?")
+        if not game:
+            return
+        game = Path(game)
+        self.hotsDir.set(game)
+
+    def updateOverwriteState(self, *args):
+        a = Path(self.diabloDLL.get())
+        b = Path(self.hotsDLL.get())
+
+        state = "enabled" if a.is_file() and b.is_file() else "disabled"
+        self.overwriteButton["state"] = state
+
+    def validateDIABLO(self, *args):
+        game = Path(self.diabloDir.get())
+        game64 = game/"x64"
+
+        if game64.is_dir():
+            for source in game64.iterdir():
+                if source.match("fmodex64*.dll"):
+                    self.diabloDLL.set(source)
+                    self.diabloLabel.config(foreground="green")
+                    return
+        self.diabloDLL.set("Diablo III fmodex64 not found")
+        self.diabloLabel.config(foreground="red")
+
+    def validateHOTS(self, *args):
+        game = Path(self.hotsDir.get())
+        game64 = game/"Support64"
+
+        if game64.is_dir():
+            for source in game64.iterdir():
+                if source.match("fmodex64*.dll"):
+                    self.hotsDLL.set(source)
+                    self.hotsLabel.config(foreground="green")
+                    return
+        self.hotsDLL.set("HotS fmodex64 not found")
+        self.hotsLabel.config(foreground="red")
+
+
+def main():
+    win = SoundFixWindow()
+    win.mainloop()
+
+if __name__ == "__main__":
+    main()
+
