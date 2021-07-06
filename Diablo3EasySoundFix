@@ -18,14 +18,17 @@ HOW TO USE THIS METHOD.
 
 __author__ = "WitchChicken"
 
+import json
 from pathlib import Path
 import shutil
 
 from tkinter import Tk, Button, Entry, Label, StringVar, Text, E, N, W, S, X
 from tkinter.filedialog import askdirectory
 
+
 DefaultDIABLO = Path("C:/Program Files (x86)/Diablo III")
 DefaultHOTS = Path("C:/Program Files (x86)/Heroes of the Storm")
+
 
 class SoundFixWindow(Tk):
 
@@ -41,12 +44,35 @@ class SoundFixWindow(Tk):
         self.initUI()
 
         self.diabloDir.trace('w', self.validateDIABLO)
-        self.diabloDir.set(DefaultDIABLO)
+
         self.hotsDir.trace('w', self.validateHOTS)
-        self.hotsDir.set(DefaultHOTS)
+
 
         self.diabloDLL.trace('w', self.updateOverwriteState)
         self.hotsDLL.trace('w', self.updateOverwriteState)
+
+        self.loadJson()
+
+    def loadJson(self):
+        jsonPath = Path.cwd()/"Diablo 3 Easy Sound Fix.json"
+
+        try:
+            with open(jsonPath, 'r') as f:
+                directories = json.loads(f.read())
+        except FileNotFoundError:
+            self.diabloDir.set(DefaultDIABLO)
+            self.hotsDir.set(DefaultHOTS)
+            return
+
+        if "diablo" in directories:
+            self.diabloDir.set(directories["diablo"])
+        else:
+            self.diabloDir.set(DefaultDIABLO)
+
+        if "hots" in directories:
+            self.hotsDir.set(directories["hots"])
+        else:
+            self.hotsDir.set(DefaultHOTS)
 
     def initUI(self):
         self.columnconfigure(1, weight=1)
@@ -101,6 +127,18 @@ class SoundFixWindow(Tk):
         except:
             self.statusbar.config(text="failed")
 
+        newDirectories = {}
+
+        if not self.hotsDir == DefaultHOTS:
+            newDirectories["hots"] = self.hotsDir.get()
+        if not self.diabloDir == DefaultDIABLO:
+            newDirectories["diablo"] = self.diabloDir.get()
+
+        if newDirectories and self.statusbar["text"] == "success":
+            jsonPath = Path.cwd()/"Diablo 3 Easy Sound Fix.json"
+            with open(jsonPath, 'w') as f:
+                json.dump(newDirectories, f, indent=4)
+
     def searchDIABLO(self):
         game = askdirectory(title="Where is Diablo III installed?")
         if not game:
@@ -147,6 +185,7 @@ class SoundFixWindow(Tk):
                     return
         self.hotsDLL.set("HotS fmodex64 not found")
         self.hotsLabel.config(foreground="red")
+
 
 def main():
     win = SoundFixWindow()
